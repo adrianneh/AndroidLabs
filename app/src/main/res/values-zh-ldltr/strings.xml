@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">实验室 1</string>
+    <string name="hello_message">你好!</string>
+    <string name="ButtonText">我是一个按钮</string>
+    <string name="LoginText">名称</string>
+    <string name="passwordText">密码</string>
+</resources>
