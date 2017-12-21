@@ -4,6 +4,9 @@
     <string name="startButtonText">I\'m a button</string>
     <string name="startChatText">Start Chat</string>
     <string name="sendButtonText">Send</string>
+    <string name="weatherButtonText">Weather</string>
+
+    <string name="deleteMessageText">Delete Message</string>
 
     <string name="loginText">Login</string>
     <string name="passwordText">Password</string>

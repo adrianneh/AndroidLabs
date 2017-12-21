@@ -11,14 +11,13 @@ import android.util.Log;
 
 public class ChatDatabaseHelper extends SQLiteOpenHelper {
 
-    private static String DATABASE_NAME = "Messages.db";
-    private static String TABLE_NAME = "MESSAGES";
-    private static int VERSION_NUM =7;
+    public static String DATABASE_NAME = "Messages.db";
+    public static String TABLE_NAME = "MESSAGES";
+    public static int VERSION_NUM =21;
     public static final String KEY_ID = " _id";
     public static final String KEY_MESSAGE = "message";
 
     public ChatDatabaseHelper(Context ctx){
-
         super(ctx, DATABASE_NAME, null, VERSION_NUM);
     }
 
@@ -41,5 +40,13 @@ public class ChatDatabaseHelper extends SQLiteOpenHelper {
 
     }
 
+
+    @Override
+    public void onDowngrade(SQLiteDatabase db, int oldVer, int newVer) {
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_NAME);
+        onCreate(db);
+        Log.i("ChatDatabaseHelper", "Calling onUpgrade, oldVersion = " + oldVer + "newVersion=" + newVer);
+
+    }
 
 }

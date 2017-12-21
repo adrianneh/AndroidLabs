@@ -3,6 +3,7 @@ package android.labs;
 import android.app.Activity;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
@@ -10,9 +11,11 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
@@ -30,6 +33,8 @@ public class ChatWindow extends Activity {
     SQLiteDatabase db;
     Cursor cursor;
 
+    boolean frameExists;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -46,7 +51,7 @@ public class ChatWindow extends Activity {
         ChatDatabaseHelper dbHelper = new ChatDatabaseHelper(this);
         db = dbHelper.getWritableDatabase();
 
-        cursor = db.rawQuery("SELECT * from MESSAGES", null);
+        cursor = db.rawQuery("SELECT * from " + ChatDatabaseHelper.TABLE_NAME, null);
         int colInd = cursor.getColumnIndex(ChatDatabaseHelper.KEY_MESSAGE);
         while(cursor.moveToNext()){
             String message = cursor.getString(colInd);
@@ -67,13 +72,68 @@ public class ChatWindow extends Activity {
                 ContentValues cValues = new ContentValues();
                 cValues.put(ChatDatabaseHelper.KEY_MESSAGE, chatText.getText().toString());
                 db.insert("MESSAGES", "Null replacement value", cValues);
-                chatText.setText("");
-                messageAdapter.notifyDataSetChanged();
 
+                messageAdapter.notifyDataSetChanged();
+                chatText.setText("");
             }
         });
 
+        frameExists = findViewById(R.id.frameChatDetails) != null;
+
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
+                @Override
+                public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
+                    String msg = cursor.getString(cursor.getColumnIndex(ChatDatabaseHelper.KEY_MESSAGE));
+
+                    Bundle bundle = new Bundle();
+                    bundle.putLong("id", id);
+                    bundle.putString("msg", msg);
+                    bundle.putInt("position", position);
+
+                    // if Device width is less than 600px wide (i.e. layout-sq600dp)
+                    if (!frameExists){
+                        Intent intent = new Intent(ChatWindow.this, MessageDetails.class);
+                        intent.putExtra("msgDetails", bundle);
+                        startActivityForResult(intent, 10);
+                    }
+                    // Device width is more than 600px wide, load fragment
+                    else {
+                        MessageDetailsFragment messageFragment = new MessageDetailsFragment();
+                        messageFragment.setArguments(bundle);
+                        getFragmentManager().beginTransaction()
+                                .replace(R.id.frameChatDetails, messageFragment).commit();
+                    }
+                }
+        }
+        );
+
+
     }
+
+    protected void deleteMessage(long id, int position){
+        arrayList.remove(position);
+        db.delete(ChatDatabaseHelper.TABLE_NAME, ChatDatabaseHelper.KEY_ID + "=" + id, null);
+        messageAdapter.notifyDataSetChanged();
+    }
+
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data){
+
+        if (requestCode == 10){
+            if (resultCode == Activity.RESULT_OK){
+
+                Bundle extras = data.getExtras();
+                long id = extras.getLong("id");
+                int position = extras.getInt("position");
+                deleteMessage(id, position);
+            }
+        }
+    }
+
+
+
 
     private class ChatAdapter extends ArrayAdapter<String>{
         public ChatAdapter(Context ctx){
@@ -97,12 +157,20 @@ public class ChatWindow extends Activity {
                 result = inflater.inflate(R.layout.chat_row_outgoing, null);
             }
 
-            TextView message = (TextView)result.findViewById(R.id.message_text);
+           TextView message = (TextView)result.findViewById(R.id.message_text);
             message.setText(getItem(position));
             return result;
         }
+       @Override
+        public long getItemId(int position){
+            if (cursor == null){
+                throw new NullPointerException("cursor is empty");
+            }
+           //cursor = db.rawQuery("SELECT * FROM " + ChatDatabaseHelper.TABLE_NAME, null);
+            cursor.moveToPosition(position);
+            return cursor.getLong(0);
+        }
     }
-
     public void onDestroy() {
         super.onDestroy();
         db.close();
